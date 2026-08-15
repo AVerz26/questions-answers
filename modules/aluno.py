@@ -67,6 +67,10 @@ def render_aluno_view(preselected_quiz_code: str = None):
         st.markdown(f"**Questão {idx}** ({q['points']} pts)")
         st.markdown(f"##### {q['question_text']}")
 
+        # Exibe imagem ilustrativa da questão se houver
+        if q.get('image_data'):
+            st.image(q['image_data'], caption=f"Ilustração - Questão {idx}", use_container_width=True)
+
         # Mapeia as opções
         options_dict = {f"{opt['option_text']}": opt['id'] for opt in q['options']}
         
@@ -131,6 +135,8 @@ def render_aluno_view(preselected_quiz_code: str = None):
                 status_label = "[Correta]" if is_hit else "[Incorreta]"
                 
                 st.markdown(f"**{status_label} Questão {idx}:** {q['question_text']}")
+                if q.get('image_data'):
+                    st.image(q['image_data'], caption=f"Ilustração - Questão {idx}", width=300)
                 st.markdown(f"- **Sua resposta:** {chosen_opt['option_text'] if chosen_opt else 'Não respondida'}")
                 if not is_hit and correct_opt:
                     st.markdown(f"- **Resposta correta:** {correct_opt['option_text']}")

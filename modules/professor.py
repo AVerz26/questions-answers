@@ -2,6 +2,7 @@ import streamlit as st
 import qrcode
 import io
 import socket
+import base64
 from PIL import Image
 import database as db
 
@@ -34,9 +35,9 @@ def generate_qr_image(url: str) -> bytes:
 
 def render_professor_view():
     st.title("Painel do Professor - Gestão de Quizzes")
-    st.markdown("Crie questionários, cadastre questões, gere QR Codes para os alunos e gerencie suas avaliações.")
+    st.markdown("Crie questionários, cadastre questões com imagens ilustrativas, gere QR Codes e gerencie avaliações.")
     
-    tabs = st.tabs(["Meus Quizzes e QR Codes", "Criar Novo Quiz", "Adicionar Questões"])
+    tabs = st.tabs(["Meus Quizzes e QR Codes", "Criar Novo Quiz", "Adicionar Questões", "⚙️ Segurança / Senha"])
 
     # =========================================================================
     # TAB 1: MEUS QUIZZES & QR CODES
@@ -127,7 +128,7 @@ def render_professor_view():
                     st.info("Agora vá para a aba 'Adicionar Questões' para cadastrar as perguntas!")
 
     # =========================================================================
-    # TAB 3: ADICIONAR QUESTÕES
+    # TAB 3: ADICIONAR QUESTÕES (COM SUPORTE A IMAGENS)
     # =========================================================================
     with tabs[2]:
         st.subheader("Adicionar Perguntas ao Quiz")
@@ -149,6 +150,8 @@ def render_professor_view():
                 with st.expander("Ver Questões já cadastradas", expanded=False):
                     for idx, q_item in enumerate(existing_questions, 1):
                         st.markdown(f"**{idx}. {q_item['question_text']}** ({q_item['points']} pts)")
+                        if q_item.get('image_data'):
+                            st.image(q_item['image_data'], caption=f"Imagem da Questão {idx}", width=320)
                         for opt in q_item['options']:
                             mark = "[Correta]" if opt['is_correct'] else "[Incorreta]"
                             st.write(f"{mark} {opt['option_text']}")
@@ -160,9 +163,17 @@ def render_professor_view():
             st.markdown("#### Formulário da Nova Questão")
 
             with st.form("form_add_question", clear_on_submit=True):
-                question_text = st.text_area("Enunciado da Questão *", placeholder="Ex: Qual é a fórmula da velocidade média?")
+                question_text = st.text_area("Enunciado da Questão *", placeholder="Ex: Analise o gráfico/imagem abaixo e assinale a alternativa correta:")
+                
+                # Campo de Upload de Imagem
+                uploaded_img = st.file_uploader(
+                    "Imagem Ilustrativa para a Questão (Opcional - PNG, JPG, JPEG, WEBP):",
+                    type=["png", "jpg", "jpeg", "webp"],
+                    help="Caso a questão dependa de um gráfico, diagrama, foto ou mapa, faça o upload aqui."
+                )
+
                 points = st.number_input("Pontuação da Questão", min_value=0.5, max_value=100.0, value=2.5, step=0.5)
-                explanation = st.text_input("Explicação da Resposta (Feedback para o Aluno após término)", placeholder="Ex: Vm = ΔS / Δt")
+                explanation = st.text_input("Explicação da Resposta (Feedback para o Aluno após término)", placeholder="Ex: Conforme visto no gráfico, o valor máximo é atingido em t=4s.")
                 
                 st.markdown("**Alternativas de Resposta (Marque a Correta):**")
                 
@@ -211,12 +222,47 @@ def render_professor_view():
                         if correct_count != 1:
                             st.error("Selecione exatamente UMA alternativa como correta!")
                         else:
+                            # Processar imagem se foi enviada
+                            image_b64_data = None
+                            if uploaded_img is not None:
+                                mime_type = uploaded_img.type or "image/png"
+                                raw_bytes = uploaded_img.read()
+                                b64_str = base64.b64encode(raw_bytes).decode("utf-8")
+                                image_b64_data = f"data:{mime_type};base64,{b64_str}"
+
                             db.add_question(
                                 quiz_id=selected_quiz_id,
                                 question_text=question_text.strip(),
                                 points=points,
                                 explanation=explanation.strip(),
-                                options=options_list
+                                options=options_list,
+                                image_data=image_b64_data
                             )
                             st.success("Questão cadastrada com sucesso!")
                             st.rerun()
+
+    # =========================================================================
+    # TAB 4: SEGURANÇA E SENHA DO PROFESSOR
+    # =========================================================================
+    with tabs[3]:
+        st.subheader("Segurança e Senha de Acesso")
+        st.markdown("Defina a senha necessária para acessar o Painel do Professor e o Dashboard de Resultados.")
+        
+        with st.form("form_change_password"):
+            current_pwd = st.text_input("Senha Atual", type="password")
+            new_pwd = st.text_input("Nova Senha", type="password", help="Mínimo de 4 caracteres.")
+            confirm_pwd = st.text_input("Confirmar Nova Senha", type="password")
+            
+            submit_pwd = st.form_submit_button("Atualizar Senha", use_container_width=True, type="primary")
+            if submit_pwd:
+                saved_pwd = db.get_professor_password()
+                if current_pwd != saved_pwd:
+                    st.error("A senha atual informada está incorreta.")
+                elif len(new_pwd) < 4:
+                    st.error("A nova senha deve possuir pelo menos 4 caracteres.")
+                elif new_pwd != confirm_pwd:
+                    st.error("A confirmação da nova senha não confere.")
+                else:
+                    db.set_professor_password(new_pwd)
+                    st.success("Senha do professor atualizada com sucesso!")
+
