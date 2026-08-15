@@ -6,8 +6,7 @@ from modules.dashboard import render_dashboard_view
 
 # Configuração global da página
 st.set_page_config(
-    page_title="Quiz Interativo com QR Code",
-    page_icon="🎯",
+    page_title="Sistema de Quiz Interativo",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -24,16 +23,15 @@ default_index = 1 if url_quiz_code else 0
 
 # Barra Lateral de Navegação
 with st.sidebar:
-    st.image("https://img.icons8.com/isometric/512/quiz.png", width=70)
-    st.title("🎯 Quiz Interativo")
-    st.caption("Sistema de Avaliações em Tempo Real")
+    st.title("Sistema de Quiz")
+    st.caption("Avaliações e Respostas em Tempo Real")
     
     st.divider()
     
     nav_options = [
-        "👨‍🏫 Área do Professor",
-        "🎓 Portal do Aluno",
-        "📊 Dashboard de Resultados"
+        "Área do Professor",
+        "Portal do Aluno",
+        "Dashboard de Resultados"
     ]
     
     # Se veio com parâmetro na URL, pré-seleciona "Portal do Aluno"
@@ -44,19 +42,19 @@ with st.sidebar:
     )
     
     st.divider()
-    st.markdown("### 💡 Como Usar:")
+    st.markdown("### Instruções de Uso:")
     st.markdown("""
-    1. **Professor:** Crie o quiz e as questões.
-    2. **QR Code:** Projete o QR code na tela para os alunos.
-    3. **Alunos:** Escaneiam pelo celular e respondem.
-    4. **Resultados:** Acompanhe o gráfico em tempo real no Dashboard!
+    1. **Professor:** Crie o questionário e cadastre as questões.
+    2. **QR Code:** Projete o QR code ou compartilhe o link com a turma.
+    3. **Alunos:** Acessem pelo smartphone ou navegador e respondam.
+    4. **Resultados:** Acompanhe o desempenho em tempo real no Dashboard.
     """)
-    st.caption("Powered by Streamlit & SQLite")
+    st.caption("Desenvolvido com Streamlit e SQLite")
 
 # Roteamento de Páginas
-if selected_page == "👨‍🏫 Área do Professor":
+if selected_page == "Área do Professor":
     render_professor_view()
-elif selected_page == "🎓 Portal do Aluno":
+elif selected_page == "Portal do Aluno":
     render_aluno_view(preselected_quiz_code=url_quiz_code)
-elif selected_page == "📊 Dashboard de Resultados":
+elif selected_page == "Dashboard de Resultados":
     render_dashboard_view()
