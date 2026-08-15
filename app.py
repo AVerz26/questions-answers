@@ -1,16 +1,20 @@
 import streamlit as st
 import database as db
+from theme_pre_enem import inject_custom_theme, LOGO_PRE_ENEM_BASE64
 from modules.professor import render_professor_view
 from modules.aluno import render_aluno_view
 from modules.dashboard import render_dashboard_view
 
 # Configuração global da página
 st.set_page_config(
-    page_title="Sistema de Quiz Interativo",
+    page_title="Simulador TRI · Pré-Enem Digital MT",
     page_icon="📝",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Injeta CSS e Design System Oficial do Pré-Enem Digital MT
+inject_custom_theme()
 
 # Inicializa o banco SQLite e popula dados de exemplo se necessário
 db.seed_sample_quiz_if_empty()
@@ -25,7 +29,8 @@ url_quiz_code = query_params.get("quiz", None)
 
 # Barra Lateral de Navegação e Controle de Acesso
 with st.sidebar:
-    st.title("Sistema de Quiz")
+    st.markdown(f'<img src="{LOGO_PRE_ENEM_BASE64}" style="width:100%; max-width:210px; margin-bottom:12px;" alt="Pré-Enem Digital MT">', unsafe_allow_html=True)
+    st.markdown("<p style='font-family:IBM Plex Mono, monospace; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#9FD3D3;'>Pré-Enem Digital MT</p>", unsafe_allow_html=True)
     
     if st.session_state.professor_auth:
         st.success("Professor Conectado")
