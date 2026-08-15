@@ -80,16 +80,17 @@ def render_professor_view():
                         st.divider()
                         st.markdown("#### 🔗 Link de Acesso do Aluno")
                         
-                        # Opção para configurar domínio ou IP
-                        base_url_default = f"http://{local_ip}:8501"
+                        # URL padrão configurada para o deploy oficial
+                        base_url_default = "https://questions-and-anwers.streamlit.app"
                         base_url = st.text_input(
-                            "Endereço Base (IP Local ou URL do Streamlit Cloud):",
+                            "Endereço Base do Aplicativo (Deploy ou IP Local):",
                             value=base_url_default,
                             key=f"url_base_{q['id']}",
-                            help="Se os alunos estiverem no mesmo Wi-Fi, use o IP local. Se estiver no Streamlit Cloud, cole a URL pública."
+                            help="URL pública onde o app está hospedado. Altere caso queira testar em rede local."
                         )
                         
-                        quiz_url = f"{base_url}/?quiz={q['quiz_code']}"
+                        clean_base = base_url.rstrip('/')
+                        quiz_url = f"{clean_base}/?quiz={q['quiz_code']}"
                         st.code(quiz_url, language="text")
 
                     with col2:
