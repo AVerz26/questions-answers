@@ -81,29 +81,6 @@ O Streamlit abrirá automaticamente no navegador em: `http://localhost:8501`.
 
 ---
 
-## Como Usar com Alunos na Mesma Rede Wi-Fi (Sala de Aula)
-
-Ao executar o comando `streamlit run app.py`, o terminal exibirá duas URLs:
-1. **Local URL:** `http://localhost:8501` (Acesso no seu próprio computador)
-2. **Network URL:** `http://192.168.x.x:8501` (Acesso dos celulares na mesma rede)
-
-No painel do professor, o sistema também permite alterar o endereço base para o IP local se desejado.
-
----
-
-## Como Publicar Gratuitamente no Streamlit Community Cloud
-
-Para que os alunos possam responder de qualquer lugar (mesmo usando dados móveis 4G/5G):
-
-1. Suba este projeto para um repositório no **GitHub** (veja as instruções abaixo).
-2. Acesse [share.streamlit.io](https://share.streamlit.io/) e faça login com sua conta do GitHub.
-3. Clique em **"New app"**, selecione o repositório, a branch `main` e o arquivo principal `app.py`.
-4. Defina o App URL personalizado como `questions-and-anwers.streamlit.app` e clique em **"Deploy!"**.
-5. Em poucos segundos, sua aplicação estará no ar no link oficial: `https://questions-and-anwers.streamlit.app/`.
-6. O sistema já vem configurado por padrão com este link para gerar automaticamente os QR Codes dos alunos (`https://questions-and-anwers.streamlit.app/?quiz=CODIGO`)!
-
----
-
 ## Como Fazer Upload para o GitHub
 
 Execute os comandos no terminal dentro da pasta do projeto:
