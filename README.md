@@ -6,11 +6,15 @@ Sistema completo e moderno para criação de questionários/quizzes interativos 
 
 ## Funcionalidades Principais
 
+- **Sistema TRI Padrão ENEM (Teoria de Resposta ao Item - Modelo 3PL)**:
+  - **Cálculo da Proficiência ($\theta$)**: Estimador EAP (*Expected A Posteriori*) na escala oficial do ENEM (centro em 500 pontos, desvio 100).
+  - **Escada de Conhecimento e Coerência Pedagógica**: O sistema analisa o caderno inteiro de respostas do aluno. Acertos em questões difíceis com erros nas fáceis são penalizados como chutes.
+  - **Parâmetros Psicométricos ($a, b, c$)**: Calibração de Dificuldade ($b$), Discriminação ($a$) e Probabilidade de Chute ($c$) por questão.
+  - **Curvas Características dos Itens (CCI)**: Gráficos psicométricos interativos em formato "S" (Plotly) no Dashboard.
 - **Área do Professor (Protegida por Senha)**:
   - Cadastro rápido de questionários (título, instruções, tempo limite).
-  - Adição de questões de múltipla escolha com **suporte a upload de imagens ilustrativas** (gráficos, tabelas, diagramas, figuras).
+  - Adição de questões com **suporte a imagens ilustrativas** e **seletor pedagógico TRI** (Fácil, Média, Difícil ou calibração avançada com sliders).
   - Pontuação personalizada e gabarito com explicação pedagógica comentada.
-  - Ativação/Pausa e exclusão de questionários.
   - Aba de **Configuração de Senha** para personalizar o PIN de acesso do docente (senha padrão inicial: `admin123`).
 - **Gerador de QR Code Inteligente**:
   - Geração automática do QR Code com o link direto do quiz (`https://questions-and-anwers.streamlit.app/?quiz=CODIGO`).
@@ -18,15 +22,14 @@ Sistema completo e moderno para criação de questionários/quizzes interativos 
   - Download da imagem do QR Code em alta resolução (PNG) para projeção ou slides.
 - **Portal do Aluno (Totalmente Isolado)**:
   - Visualização exclusiva do questionário, sem acesso a dados de outros alunos ou painéis administrativos.
-  - Interface limpa, responsiva e adaptada para celulares e tablets.
-  - Exibição integrada de imagens em alta resolução nas questões.
+  - Exibição da **Nota TRI (Escala ENEM)**, proficiência ($\theta$) e **Badge de Coerência Pedagógica** após o envio.
+  - Interface limpa, responsiva e adaptada para celulares e tablets com suporte a imagens.
   - Acesso direto via câmera/QR Code ou código de 6 dígitos.
-  - Correção automática imediata com cálculo de nota, porcentagem e visualização do gabarito comentado.
-- **Dashboard Dinâmico de Resultados (Acesso Restrito ao Professor)**:
-  - **KPIs em tempo real**: Total de alunos, média da turma, maior/menor nota e taxa de aprovação.
-  - **Gráficos Interativos (Plotly)**: Histograma de distribuição de notas e taxa de acerto por questão (destacando pontos de dúvida).
-  - **Análise Pedagógica**: Visualização de alternativas mais marcadas pelos alunos (análise de distratores).
-  - **Tabela de Classificação/Ranking**: Com posições e exportação dos dados para **CSV (Excel)**.
+- **Dashboard Dinâmico de Resultados & Psicométrico**:
+  - **Métricas TRI em tempo real**: Média TRI (ENEM), proficiência média ($\theta$), maior/menor nota TRI e aproveitamento.
+  - **Gráfico de Dispersão Coerência vs. TRI**: Efeito visual dos acertos casuais comparando % clássica vs. Nota TRI.
+  - **Curvas Características dos Itens (CCI)** e análise de distratores.
+  - **Ranking da Turma por Nota TRI**: Com exportação completa em **CSV (Excel)**.
 
 ---
 
