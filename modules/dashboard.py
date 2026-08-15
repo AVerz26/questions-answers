@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import database as db
 
 def render_dashboard_view():
-    st.title("📊 Painel Dinâmico de Resultados da Turma")
+    st.title("Painel Dinâmico de Resultados da Turma")
     st.markdown("Acompanhe o desempenho dos alunos em tempo real, identifique dificuldades e analise métricas detalhadas.")
 
     quizzes = db.get_all_quizzes()
@@ -23,7 +23,7 @@ def render_dashboard_view():
     with col_ref:
         st.write("")
         st.write("")
-        if st.button("🔄 Atualizar Dados", use_container_width=True, type="primary"):
+        if st.button("Atualizar Dados", use_container_width=True, type="primary"):
             st.rerun()
 
     analytics = db.get_quiz_analytics_data(selected_quiz_id)
@@ -33,8 +33,8 @@ def render_dashboard_view():
     options_breakdown = analytics.get('options_breakdown', [])
 
     if not submissions:
-        st.warning(f"⚠️ Nenhuma resposta registrada ainda para o quiz **'{quiz_info.get('title')}'**.")
-        st.info("Peça aos alunos para escanearem o QR Code gerado no menu **'Área do Professor'**!")
+        st.warning(f"Nenhuma resposta registrada ainda para o quiz '{quiz_info.get('title')}'.")
+        st.info("Peça aos alunos para acessarem o link ou escanearem o QR Code gerado no menu 'Área do Professor'.")
         return
 
     df_subs = pd.DataFrame(submissions)
@@ -52,15 +52,15 @@ def render_dashboard_view():
 
     kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
     with kpi1:
-        st.metric("👥 Total de Alunos", f"{total_students}")
+        st.metric("Total de Alunos", f"{total_students}")
     with kpi2:
-        st.metric("📈 Média da Turma", f"{avg_score:.1f} pts", f"{avg_pct:.1f}%")
+        st.metric("Média da Turma", f"{avg_score:.1f} pts", f"{avg_pct:.1f}%")
     with kpi3:
-        st.metric("🥇 Maior Nota", f"{max_score:.1f} pts")
+        st.metric("Maior Nota", f"{max_score:.1f} pts")
     with kpi4:
-        st.metric("📉 Menor Nota", f"{min_score:.1f} pts")
+        st.metric("Menor Nota", f"{min_score:.1f} pts")
     with kpi5:
-        st.metric("🎯 Taxa de Aprovação (≥60%)", f"{pass_rate:.1f}%")
+        st.metric("Taxa de Aprovação (>=60%)", f"{pass_rate:.1f}%")
 
     st.divider()
 
@@ -70,7 +70,7 @@ def render_dashboard_view():
     col_chart1, col_chart2 = st.columns(2)
 
     with col_chart1:
-        st.subheader("📊 Distribuição de Notas da Turma")
+        st.subheader("Distribuição de Notas da Turma")
         fig_hist = px.histogram(
             df_subs,
             x="percentage",
@@ -89,7 +89,7 @@ def render_dashboard_view():
         st.plotly_chart(fig_hist, use_container_width=True)
 
     with col_chart2:
-        st.subheader("🎯 Taxa de Acerto por Questão")
+        st.subheader("Taxa de Acerto por Questão")
         if questions_stat:
             df_q = pd.DataFrame(questions_stat)
             df_q['label'] = [f"Q{q['order_num']}" for q in questions_stat]
@@ -98,11 +98,11 @@ def render_dashboard_view():
             colors = []
             for rate in df_q['success_rate']:
                 if rate >= 70:
-                    colors.append("#10B981") # Verde
+                    colors.append("#10B981")
                 elif rate >= 40:
-                    colors.append("#F59E0B") # Amarelo/Laranja
+                    colors.append("#F59E0B")
                 else:
-                    colors.append("#EF4444") # Vermelho (Atenção)
+                    colors.append("#EF4444")
 
             fig_bar = px.bar(
                 df_q,
@@ -111,7 +111,7 @@ def render_dashboard_view():
                 text="success_rate",
                 hover_data=["question_text", "total_answers", "correct_answers"],
                 labels={"label": "Questão", "success_rate": "% Acertos"},
-                title="% de Acertos por Questão (Identifique Dúvidas)"
+                title="% de Acertos por Questão"
             )
             fig_bar.update_traces(marker_color=colors, texttemplate='%{text:.1f}%', textposition='outside')
             fig_bar.update_layout(
@@ -127,8 +127,8 @@ def render_dashboard_view():
     # DETALHAMENTO DE ALTERNATIVAS POR QUESTÃO
     # =========================================================================
     if options_breakdown:
-        with st.expander("🔍 Análise Pedagógica: Escolha de Alternativas por Questão", expanded=False):
-            st.markdown("Veja quais alternativas incorretas (distratores) mais confundiram os alunos:")
+        with st.expander("Análise Pedagógica: Escolha de Alternativas por Questão", expanded=False):
+            st.markdown("Veja quais alternativas incorretas (distratores) foram mais marcadas pelos alunos:")
             df_opts = pd.DataFrame(options_breakdown)
             
             # Agrupar por questão
@@ -160,20 +160,13 @@ def render_dashboard_view():
     # =========================================================================
     # TABELA DE RANKING E CLASSIFICAÇÃO
     # =========================================================================
-    st.subheader("🏆 Ranking e Resultados Individuais")
+    st.subheader("Ranking e Resultados Individuais")
     
-    # Preparar DataFrame com medalhas
+    # Preparar DataFrame com classificação
     df_display = df_subs.copy()
     
-    medals = ["🥇 1º", "🥈 2º", "🥉 3º"]
-    ranking_col = []
-    for i in range(len(df_display)):
-        if i < 3:
-            ranking_col.append(medals[i])
-        else:
-            ranking_col.append(f"{i+1}º")
-    
-    df_display.insert(0, "Posição", ranking_col)
+    ranking_col = [f"{i+1}º Lugar" for i in range(len(df_display))]
+    df_display.insert(0, "Classificação", ranking_col)
     df_display = df_display.rename(columns={
         "student_name": "Nome do Aluno",
         "student_identifier": "Matrícula / Turma",
@@ -184,7 +177,7 @@ def render_dashboard_view():
     })
     
     st.dataframe(
-        df_display[["Posição", "Nome do Aluno", "Matrícula / Turma", "Pontos", "Total Possível", "Aproveitamento (%)", "Data/Hora de Envio"]],
+        df_display[["Classificação", "Nome do Aluno", "Matrícula / Turma", "Pontos", "Total Possível", "Aproveitamento (%)", "Data/Hora de Envio"]],
         use_container_width=True,
         hide_index=True
     )
@@ -192,7 +185,7 @@ def render_dashboard_view():
     # Botão de Exportação CSV
     csv_data = df_display.to_csv(index=False).encode('utf-8')
     st.download_button(
-        label="📥 Baixar Resultados Completos em CSV (Excel)",
+        label="Baixar Resultados Completos em CSV (Excel)",
         data=csv_data,
         file_name=f"resultados_{quiz_info.get('quiz_code', 'quiz')}.csv",
         mime="text/csv",

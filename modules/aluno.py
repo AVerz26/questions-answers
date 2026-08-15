@@ -2,7 +2,7 @@ import streamlit as st
 import database as db
 
 def render_aluno_view(preselected_quiz_code: str = None):
-    st.title("🎓 Portal do Aluno - Responder Questionário")
+    st.title("Portal do Aluno - Responder Questionário")
 
     # Se foi passado um código de quiz na URL
     quiz = None
@@ -14,7 +14,7 @@ def render_aluno_view(preselected_quiz_code: str = None):
         col_code, col_select = st.columns([1, 1])
         
         with col_code:
-            code_input = st.text_input("🔑 Digite o Código do Quiz (6 letras/números):", placeholder="Ex: A1B2C3").strip().upper()
+            code_input = st.text_input("Digite o Código do Quiz (6 letras/números):", placeholder="Ex: A1B2C3").strip().upper()
             if code_input:
                 quiz = db.get_quiz_by_code(code_input)
                 if not quiz:
@@ -30,12 +30,12 @@ def render_aluno_view(preselected_quiz_code: str = None):
                         quiz = db.get_quiz_by_code(q_map[chosen_label])
 
     if not quiz:
-        st.info("💡 Aponte a câmera do celular para o **QR Code** projetado pelo professor ou insira o código acima.")
+        st.info("Aponte a câmera do celular para o QR Code projetado pelo professor ou insira o código acima.")
         return
 
     # Verificar se o Quiz está ativo
     if not quiz['is_active']:
-        st.warning(f"🔒 O questionário **'{quiz['title']}'** está atualmente encerrado pelo professor.")
+        st.warning(f"O questionário '{quiz['title']}' está atualmente encerrado pelo professor.")
         return
 
     quiz_id = quiz['id']
@@ -47,10 +47,10 @@ def render_aluno_view(preselected_quiz_code: str = None):
         return
 
     # Cabeçalho do Quiz
-    st.info(f"### 📋 {quiz['title']}\n{quiz['description'] or ''}\n\n**Total de Questões:** {len(questions)} | **Tempo Sugerido:** {quiz['time_limit_minutes'] or 'Livre'} min")
+    st.info(f"### {quiz['title']}\n{quiz['description'] or ''}\n\n**Total de Questões:** {len(questions)} | **Tempo Sugerido:** {quiz['time_limit_minutes'] or 'Livre'} min")
 
     # Identificação do Aluno
-    st.markdown("#### 👤 Identificação")
+    st.markdown("#### Identificação")
     col1, col2 = st.columns(2)
     with col1:
         student_name = st.text_input("Seu Nome Completo *", placeholder="Ex: Maria Eduarda Santos", key=f"name_{quiz_id}")
@@ -58,7 +58,7 @@ def render_aluno_view(preselected_quiz_code: str = None):
         student_id = st.text_input("Matrícula / Turma / E-mail (Opcional)", placeholder="Ex: Turma 3B / 202401", key=f"id_{quiz_id}")
 
     st.divider()
-    st.markdown("#### 📝 Questões")
+    st.markdown("#### Questões")
 
     # Dicionário para armazenar as seleções do aluno
     selected_answers = {}
@@ -85,14 +85,14 @@ def render_aluno_view(preselected_quiz_code: str = None):
         st.markdown("---")
 
     # Botão de Envio
-    if st.button("🚀 Enviar Respostas", type="primary", use_container_width=True):
+    if st.button("Enviar Respostas", type="primary", use_container_width=True):
         if not student_name.strip():
-            st.error("⚠️ Por favor, preencha o seu nome completo antes de enviar!")
+            st.error("Por favor, preencha o seu nome completo antes de enviar!")
             st.stop()
 
         unanswered = len(questions) - len(selected_answers)
         if unanswered > 0:
-            st.warning(f"⚠️ Você ainda não respondeu {unanswered} questão(ões). Por favor, responda todas para enviar.")
+            st.warning(f"Você ainda não respondeu {unanswered} questão(ões). Por favor, responda todas para enviar.")
             st.stop()
 
         # Registrar no banco de dados SQLite
@@ -104,37 +104,36 @@ def render_aluno_view(preselected_quiz_code: str = None):
                 selected_options=selected_answers
             )
 
-        # Feedback e celebração
-        st.success("🎉 **Suas respostas foram enviadas com sucesso!**")
+        # Feedback
+        st.success("Suas respostas foram enviadas com sucesso!")
         
         score = result['score']
         total = result['total_points']
         pct = result['percentage']
 
         if pct >= 70:
-            st.balloons()
             alert_type = st.success
         elif pct >= 50:
             alert_type = st.info
         else:
             alert_type = st.warning
 
-        alert_type(f"### 🏆 Sua Nota: **{score:.1f} / {total:.1f}** ({pct:.1f}%)")
+        alert_type(f"### Sua Nota: **{score:.1f} / {total:.1f}** ({pct:.1f}%)")
 
         # Detalhamento e Gabarito
-        with st.expander("🔍 Ver Gabarito e Explicações", expanded=True):
+        with st.expander("Ver Gabarito e Explicações", expanded=True):
             for idx, q in enumerate(questions, 1):
                 user_opt_id = selected_answers.get(q['id'])
                 correct_opt = next((o for o in q['options'] if o['is_correct']), None)
                 chosen_opt = next((o for o in q['options'] if o['id'] == user_opt_id), None)
                 
                 is_hit = chosen_opt and chosen_opt['is_correct']
-                icon = "✅" if is_hit else "❌"
+                status_label = "[Correta]" if is_hit else "[Incorreta]"
                 
-                st.markdown(f"**{icon} Questão {idx}:** {q['question_text']}")
+                st.markdown(f"**{status_label} Questão {idx}:** {q['question_text']}")
                 st.markdown(f"- **Sua resposta:** {chosen_opt['option_text'] if chosen_opt else 'Não respondida'}")
                 if not is_hit and correct_opt:
                     st.markdown(f"- **Resposta correta:** {correct_opt['option_text']}")
                 if q.get('explanation'):
-                    st.caption(f"💡 **Explicação do Professor:** {q['explanation']}")
+                    st.caption(f"**Explicação do Professor:** {q['explanation']}")
                 st.divider()
