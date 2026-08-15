@@ -63,22 +63,63 @@ def render_aluno_view(preselected_quiz_code: str = None):
             if not questions:
                 st.warning("Este questionário ainda não possui questões cadastradas.")
             else:
-                # Gerar ou recuperar PIN único de 4 dígitos da sessão do aluno
+                # =====================================================================
+                # RECUPERAÇÃO E PERSISTÊNCIA EM CACHE DO PIN ÚNICO DO ALUNO
+                # (Camada 1: URL Query Params | Camada 2: Session State | Camada 3: LocalStorage)
+                # =====================================================================
                 pin_session_key = f"student_pin_assigned_{quiz_id}"
-                if pin_session_key not in st.session_state:
-                    st.session_state[pin_session_key] = db.generate_unique_student_pin(quiz_id)
+                url_pin = st.query_params.get("pin", None)
                 
-                assigned_pin = st.session_state[pin_session_key]
+                if url_pin and len(str(url_pin).strip()) == 4:
+                    assigned_pin = str(url_pin).strip()
+                    st.session_state[pin_session_key] = assigned_pin
+                elif pin_session_key in st.session_state:
+                    assigned_pin = st.session_state[pin_session_key]
+                    st.query_params["pin"] = assigned_pin
+                    st.query_params["quiz"] = quiz['quiz_code']
+                else:
+                    assigned_pin = db.generate_unique_student_pin(quiz_id)
+                    st.session_state[pin_session_key] = assigned_pin
+                    st.query_params["pin"] = assigned_pin
+                    st.query_params["quiz"] = quiz['quiz_code']
+
+                # Sincronização com o localStorage do navegador (permanece mesmo se fechar a aba ou rescannear)
+                st.components.v1.html(f"""
+                <script>
+                (function() {{
+                    const quizId = "{quiz_id}";
+                    const quizCode = "{quiz['quiz_code']}";
+                    const currentPin = "{assigned_pin}";
+                    const storageKey = 'pre_enem_pin_' + quizId;
+                    
+                    // Salva o PIN atual no localStorage do dispositivo do aluno
+                    if (currentPin) {{
+                        localStorage.setItem(storageKey, currentPin);
+                    }}
+                    
+                    // Verifica se a URL perdeu o PIN mas o localStorage possui
+                    const urlParams = new URLSearchParams(window.parent.location.search);
+                    if (!urlParams.get('pin')) {{
+                        const cachedPin = localStorage.getItem(storageKey);
+                        if (cachedPin && cachedPin.length === 4) {{
+                            urlParams.set('quiz', quizCode);
+                            urlParams.set('pin', cachedPin);
+                            window.parent.location.search = urlParams.toString();
+                        }}
+                    }}
+                }})();
+                </script>
+                """, height=0, width=0)
 
                 # Cartão de Identificação Único do Aluno (Design Oficial Pré-Enem)
                 st.markdown(f"""
                 <div class="pin-display-card">
-                    <span class="eyebrow-text" style="color: var(--ink-soft); font-size: 13px;">🎫 SEU CÓDIGO IDENTIFICADOR ÚNICO</span>
+                    <span class="eyebrow-text" style="color: var(--ink-soft); font-size: 13px;">🎫 SEU CÓDIGO IDENTIFICADOR ÚNICO (SALVO EM CACHE)</span>
                     <div>
                         <div class="pin-number">{assigned_pin}</div>
                     </div>
                     <p style="margin: 4px 0 0; color: var(--ink-soft); font-size: 14px;">
-                        📸 <b>Anote ou tire print deste código de 4 números!</b> Ele é a sua chave exclusiva para consultar sua nota TRI e gabarito assim que o professor liberar os resultados da turma.
+                        📸 <b>Código fixado e salvo no seu navegador!</b> Mesmo que você atualize a página ou feche o aplicativo, seu código permanecerá <b>{assigned_pin}</b>.
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
