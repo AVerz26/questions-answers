@@ -5,6 +5,7 @@ import socket
 import base64
 from PIL import Image
 import database as db
+from theme_pre_enem import render_brand_header
 
 def get_local_ip():
     """Tenta identificar o IP local da máquina na rede Wi-Fi/Ethernet."""
@@ -18,7 +19,7 @@ def get_local_ip():
         return "localhost"
 
 def generate_qr_image(url: str) -> bytes:
-    """Gera os bytes de uma imagem PNG com o QR Code de alta qualidade."""
+    """Gera os bytes de uma imagem PNG com o QR Code de alta qualidade nas cores oficiais."""
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_H,
@@ -27,17 +28,17 @@ def generate_qr_image(url: str) -> bytes:
     )
     qr.add_data(url)
     qr.make(fit=True)
-    img = qr.make_image(fill_color="#1E293B", back_color="#FFFFFF")
+    img = qr.make_image(fill_color="#0C535E", back_color="#FFFFFF")
     
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()
 
 def render_professor_view():
-    st.title("Painel do Professor - Gestão de Quizzes")
-    st.markdown("Crie questionários, cadastre questões com imagens ilustrativas, gere QR Codes e gerencie avaliações.")
+    render_brand_header("Área do Professor", "Simulador TRI · Pré-Enem Digital MT")
+    st.markdown("<p style='color:var(--ink-soft); margin-top:-6px;'>Cadastre questões, defina dificuldades para a TRI, ative a prova e gere QR Codes para os estudantes.</p>", unsafe_allow_html=True)
     
-    tabs = st.tabs(["Meus Quizzes e QR Codes", "Criar Novo Quiz", "Adicionar Questões", "⚙️ Segurança / Senha"])
+    tabs = st.tabs(["📚 Quizzes & QR Codes", "➕ Criar Nova Avaliação", "✏️ Cadastrar Questões", "⚙️ Segurança & Senha"])
 
     # =========================================================================
     # TAB 1: MEUS QUIZZES & QR CODES
