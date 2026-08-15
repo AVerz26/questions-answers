@@ -58,10 +58,11 @@ def render_professor_view():
                     with col1:
                         st.markdown(f"**Descrição:** {q['description'] or '_Sem descrição_'}")
                         st.markdown(f"**Criado em:** {q['created_at']}")
-                        status_str = "**Ativo (Recebendo Respostas)**" if q['is_active'] else "**Pausado / Fechado**"
-                        st.markdown(f"**Status:** {status_str}")
+                        status_str = "🟢 **Recebendo Respostas**" if q['is_active'] else "⏸️ **Pausado / Fechado**"
+                        status_res = "📢 **Notas Liberadas aos Alunos**" if q.get('results_released') else "🔒 **Notas Ocultas (Em andamento)**"
+                        st.markdown(f"**Status:** {status_str} | {status_res}")
                         
-                        col_btn1, col_btn2 = st.columns(2)
+                        col_btn1, col_btn2, col_btn3 = st.columns(3)
                         with col_btn1:
                             if q['is_active']:
                                 if st.button("Pausar Quiz", key=f"pause_{q['id']}", use_container_width=True):
@@ -73,7 +74,18 @@ def render_professor_view():
                                     st.rerun()
                         
                         with col_btn2:
-                            if st.button("Excluir Quiz", key=f"del_{q['id']}", type="secondary", use_container_width=True):
+                            if q.get('results_released'):
+                                if st.button("🔒 Ocultar Notas", key=f"hide_res_{q['id']}", use_container_width=True, help="Oculta as notas e o gabarito para os alunos."):
+                                    db.toggle_quiz_results_release(q['id'], False)
+                                    st.rerun()
+                            else:
+                                if st.button("📢 Liberar Notas", key=f"rel_res_{q['id']}", type="primary", use_container_width=True, help="Libera as notas TRI e gabaritos comentados para os alunos após o término da aplicação."):
+                                    db.toggle_quiz_results_release(q['id'], True)
+                                    st.success("Notas liberadas com sucesso para os alunos!")
+                                    st.rerun()
+                        
+                        with col_btn3:
+                            if st.button("Excluir", key=f"del_{q['id']}", type="secondary", use_container_width=True):
                                 db.delete_quiz(q['id'])
                                 st.success("Quiz excluído com sucesso!")
                                 st.rerun()
@@ -128,7 +140,7 @@ def render_professor_view():
                     st.info("Agora vá para a aba 'Adicionar Questões' para cadastrar as perguntas!")
 
     # =========================================================================
-    # TAB 3: ADICIONAR QUESTÕES (COM SUPORTE A IMAGENS)
+    # TAB 3: ADICIONAR QUESTÕES (COM SUPORTE A IMAGENS E TRI ENEM)
     # =========================================================================
     with tabs[2]:
         st.subheader("Adicionar Perguntas ao Quiz")
@@ -147,16 +159,21 @@ def render_professor_view():
             
             st.markdown(f"**Questões atuais neste quiz:** {len(existing_questions)}")
             if existing_questions:
-                with st.expander("Ver Questões já cadastradas", expanded=False):
+                with st.expander("Ver Questões já cadastradas e Calibração TRI", expanded=False):
                     for idx, q_item in enumerate(existing_questions, 1):
-                        st.markdown(f"**{idx}. {q_item['question_text']}** ({q_item['points']} pts)")
+                        diff_badge = "🟢 Fácil" if q_item.get('difficulty_level') == 'Fácil' else ("🔴 Difícil" if q_item.get('difficulty_level') == 'Difícil' else "🟡 Média")
+                        st.markdown(f"**{idx}. {q_item['question_text']}** — {diff_badge} ({q_item['points']} pts)")
+                        
+                        param_info = f"Parâmetros TRI (Modelo 3PL): Dificuldade (b) = `{q_item.get('param_b', 0.0)}` | Discriminação (a) = `{q_item.get('param_a', 1.2)}` | Chute (c) = `{q_item.get('param_c', 0.25)}`"
+                        st.caption(param_info)
+
                         if q_item.get('image_data'):
                             st.image(q_item['image_data'], caption=f"Imagem da Questão {idx}", width=320)
                         for opt in q_item['options']:
                             mark = "[Correta]" if opt['is_correct'] else "[Incorreta]"
                             st.write(f"{mark} {opt['option_text']}")
                         if q_item.get('explanation'):
-                            st.caption(f"Explicação: {q_item['explanation']}")
+                            st.caption(f"Explicação Pedagógica: {q_item['explanation']}")
                         st.divider()
 
             st.markdown("---")
@@ -172,8 +189,42 @@ def render_professor_view():
                     help="Caso a questão dependa de um gráfico, diagrama, foto ou mapa, faça o upload aqui."
                 )
 
-                points = st.number_input("Pontuação da Questão", min_value=0.5, max_value=100.0, value=2.5, step=0.5)
-                explanation = st.text_input("Explicação da Resposta (Feedback para o Aluno após término)", placeholder="Ex: Conforme visto no gráfico, o valor máximo é atingido em t=4s.")
+                col_pts, col_diff = st.columns(2)
+                with col_pts:
+                    points = st.number_input("Pontuação Clássica", min_value=0.5, max_value=100.0, value=2.5, step=0.5)
+                with col_diff:
+                    diff_choice = st.selectbox(
+                        "Nível de Dificuldade Pedagógica (Escada do ENEM):",
+                        ["Média (Degrau Intermediário)", "Fácil (Degrau Base)", "Difícil (Degrau do Topo)"],
+                        help="A TRI utiliza esta classificação para identificar a coerência das respostas dos alunos."
+                    )
+
+                # Extrair label limpo
+                if "Fácil" in diff_choice:
+                    clean_diff = "Fácil"
+                    default_b = -1.2
+                    default_a = 1.2
+                elif "Difícil" in diff_choice:
+                    clean_diff = "Difícil"
+                    default_b = 1.4
+                    default_a = 1.6
+                else:
+                    clean_diff = "Média"
+                    default_b = 0.0
+                    default_a = 1.4
+
+                # Seção de Calibração Avançada TRI
+                with st.expander("⚙️ Calibração Avançada dos Parâmetros TRI (Modelo 3PL)", expanded=False):
+                    st.caption("Ajuste fino dos pesos do modelo psicométrico do ENEM (opcional):")
+                    col_p1, col_p2, col_p3 = st.columns(3)
+                    with col_p1:
+                        param_b = st.slider("Dificuldade (b):", min_value=-3.0, max_value=3.0, value=float(default_b), step=0.1, help="Valores negativos = questões fáceis; positivos = questões difíceis.")
+                    with col_p2:
+                        param_a = st.slider("Discriminação (a):", min_value=0.5, max_value=2.5, value=float(default_a), step=0.1, help="Capacidade da questão de separar alunos com alto e baixo domínio.")
+                    with col_p3:
+                        param_c = st.slider("Acerto Casual / Chute (c):", min_value=0.0, max_value=0.40, value=0.25, step=0.05, help="Probabilidade estimada de acerto ao acaso.")
+
+                explanation = st.text_input("Explicação Pedagógica (Feedback ao Aluno pós-envio)", placeholder="Ex: Vm = ΔS / Δt")
                 
                 st.markdown("**Alternativas de Resposta (Marque a Correta):**")
                 
@@ -236,9 +287,13 @@ def render_professor_view():
                                 points=points,
                                 explanation=explanation.strip(),
                                 options=options_list,
-                                image_data=image_b64_data
+                                image_data=image_b64_data,
+                                param_a=param_a,
+                                param_b=param_b,
+                                param_c=param_c,
+                                difficulty_level=clean_diff
                             )
-                            st.success("Questão cadastrada com sucesso!")
+                            st.success("Questão cadastrada e calibrada na TRI com sucesso!")
                             st.rerun()
 
     # =========================================================================
