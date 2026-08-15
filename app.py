@@ -1,16 +1,16 @@
 import streamlit as st
 import database as db
-from theme_pre_enem import inject_custom_theme, LOGO_PRE_ENEM_BASE64
+from theme_pre_enem import inject_custom_theme, LOGO_PRE_ENEM_BASE64, LOGO_SEDUC_DRE_BASE64
 from modules.professor import render_professor_view
 from modules.aluno import render_aluno_view
 from modules.dashboard import render_dashboard_view
 
-# Configuração global da página
+# Configuração global da página (Menu Lateral começa fechado por padrão)
 st.set_page_config(
     page_title="Simulador TRI · Pré-Enem Digital MT",
     page_icon="📝",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Injeta CSS e Design System Oficial do Pré-Enem Digital MT
@@ -29,8 +29,13 @@ url_quiz_code = query_params.get("quiz", None)
 
 # Barra Lateral de Navegação e Controle de Acesso
 with st.sidebar:
-    st.markdown(f'<img src="{LOGO_PRE_ENEM_BASE64}" style="width:100%; max-width:210px; margin-bottom:12px;" alt="Pré-Enem Digital MT">', unsafe_allow_html=True)
-    st.markdown("<p style='font-family:IBM Plex Mono, monospace; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#9FD3D3;'>Pré-Enem Digital MT</p>", unsafe_allow_html=True)
+    st.markdown(f'''
+    <div style="text-align: center; margin-bottom: 14px;">
+        <img src="{LOGO_PRE_ENEM_BASE64}" style="width: 100%; max-width: 190px; margin-bottom: 10px;" alt="Pré-Enem Digital MT">
+        <img src="{LOGO_SEDUC_DRE_BASE64}" style="width: 100%; max-width: 190px; border-radius: 6px;" alt="SEDUC MT - DRE Primavera do Leste">
+    </div>
+    ''', unsafe_allow_html=True)
+    st.markdown("<p style='font-family:IBM Plex Mono, monospace; font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#9FD3D3; text-align:center;'>Pré-Enem Digital MT · DRE</p>", unsafe_allow_html=True)
     
     if st.session_state.professor_auth:
         st.success("Professor Conectado")
