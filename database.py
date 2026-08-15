@@ -13,9 +13,22 @@ def get_connection():
     return conn
 
 def init_db():
-    """Cria todas as tabelas necessárias no banco SQLite se não existirem."""
+    """Cria todas as tabelas necessárias no banco SQLite se não existirem e aplica migrações."""
     conn = get_connection()
     cursor = conn.cursor()
+
+    # Tabela de Configurações do Sistema (ex: Senha do Professor)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    );
+    """)
+
+    # Senha padrão do professor se não existir
+    cursor.execute("SELECT value FROM app_settings WHERE key = 'professor_password'")
+    if not cursor.fetchone():
+        cursor.execute("INSERT INTO app_settings (key, value) VALUES ('professor_password', 'admin123')")
 
     # Tabela de Quizzes / Questionários
     cursor.execute("""
@@ -40,9 +53,16 @@ def init_db():
         points REAL DEFAULT 1.0,
         order_num INTEGER DEFAULT 1,
         explanation TEXT DEFAULT '',
+        image_data TEXT DEFAULT NULL,
         FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE
     );
     """)
+
+    # Migração segura: verifica se a coluna image_data já existe na tabela questions
+    cursor.execute("PRAGMA table_info(questions);")
+    columns = [col[1] for col in cursor.fetchall()]
+    if 'image_data' not in columns:
+        cursor.execute("ALTER TABLE questions ADD COLUMN image_data TEXT DEFAULT NULL;")
 
     # Tabela de Alternativas
     cursor.execute("""
@@ -89,6 +109,29 @@ def init_db():
     conn.commit()
     conn.close()
 
+def get_professor_password() -> str:
+    """Retorna a senha atual configurada para o acesso do professor."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM app_settings WHERE key = 'professor_password'")
+    row = cursor.fetchone()
+    conn.close()
+    return row['value'] if row else "admin123"
+
+def set_professor_password(new_password: str) -> bool:
+    """Atualiza a senha de acesso do professor."""
+    if not new_password or not new_password.strip():
+        return False
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO app_settings (key, value) VALUES ('professor_password', ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+    """, (new_password.strip(),))
+    conn.commit()
+    conn.close()
+    return True
+
 def generate_short_code() -> str:
     """Gera um código alfanumérico curto e amigável para o quiz."""
     return uuid.uuid4().hex[:6].upper()
@@ -109,9 +152,9 @@ def create_quiz(title: str, description: str = "", time_limit_minutes: int = 0) 
     conn.close()
     return {"id": quiz_id, "quiz_code": quiz_code, "title": title}
 
-def add_question(quiz_id: int, question_text: str, points: float, explanation: str, options: List[Dict[str, Any]]):
+def add_question(quiz_id: int, question_text: str, points: float, explanation: str, options: List[Dict[str, Any]], image_data: Optional[str] = None):
     """
-    Adiciona uma questão e suas opções a um quiz.
+    Adiciona uma questão, imagem ilustrativa (opcional) e suas opções a um quiz.
     options = [{'text': 'Opção A', 'is_correct': True}, ...]
     """
     conn = get_connection()
@@ -121,9 +164,9 @@ def add_question(quiz_id: int, question_text: str, points: float, explanation: s
     order_num = cursor.fetchone()[0] + 1
 
     cursor.execute("""
-        INSERT INTO questions (quiz_id, question_text, points, order_num, explanation)
-        VALUES (?, ?, ?, ?, ?)
-    """, (quiz_id, question_text, points, order_num, explanation))
+        INSERT INTO questions (quiz_id, question_text, points, order_num, explanation, image_data)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (quiz_id, question_text, points, order_num, explanation, image_data))
     
     question_id = cursor.lastrowid
 
